@@ -1,0 +1,269 @@
+local GunShotSD = workspace:WaitForChild("M16 Shot [Free]")
+local Shooter = workspace:WaitForChild("Shooter")
+local UserInputService = game:GetService("UserInputService")
+local SniperSD = workspace:WaitForChild("Sniper fire sound")
+local ShotGunSD = workspace:WaitForChild("Bang")
+local Handle = workspace:WaitForChild("Handle")
+local ClickDetector = Handle:WaitForChild("ClickDetector")
+local Target = workspace:WaitForChild("Target")
+
+
+local IsShooting = false
+local FireMode = "FullAuto"
+local Ammo = {
+	  FullAuto = 100,
+	  BurstFire = 50,
+	Shotgun = 20, 
+	Sniper = 10
+}
+
+local function createFireEffect()
+	local Fire = Instance.new("ParticleEmitter")
+	Fire.Parent = Shooter
+	Fire.Color = ColorSequence.new(Color3.fromRGB(255, 170, 0))
+	Fire.Size = NumberSequence.new(2)
+	Fire.Lifetime = NumberRange.new(0.1)
+	Fire.Rate = 1000
+	Fire.Speed = NumberRange.new(20)
+	Fire.Rotation = NumberRange.new(0, 360)
+	Fire.LightEmission = 1
+	Fire.Enabled = true
+	wait(0.1)
+	Fire:Destroy()
+end
+
+local function shoot()
+	createFireEffect()
+
+	local Offset = Shooter.CFrame.LookVector * 2
+    -- Full Auto Mode
+	if FireMode == "FullAuto" then
+		if Ammo[FireMode] > 0 then
+		local projectile = Instance.new("Part")
+		projectile.Size = Vector3.new(1, 1, 1)
+		projectile.Position = Shooter.Position + Offset
+		projectile.Anchored = false
+		projectile.BrickColor = BrickColor.new("Really red")
+		projectile.Parent = workspace
+		projectile.Shape = "Ball"
+		projectile.CanCollide = true 
+		
+		local distance = (projectile.Position - Target.Position).Magnitude
+				print("Distance To Target:", distance)
+
+		local projectileVelocity = Shooter.CFrame.lookVector * 700
+		projectile.Velocity = projectileVelocity
+		
+			GunShotSD:Play()
+		
+			local gravity = 0.5
+			local timeElapsed = 0.1
+			print("Gravitational UpForce Turned On For Full Auto Mode")
+			while projectile.Position.Y > 0  do
+				local gravityVelocity = Vector3.new(0, -gravity * timeElapsed, 0)
+				projectile.Velocity = projectile.Velocity + gravityVelocity
+				wait(timeElapsed)  
+				
+				local function calculateDistance(point1, point2)
+					return (point1 - point2).Magnitude				
+				end
+
+				Target.Touched:Connect(function(hit)
+					if hit or hit:IsA("Part") then
+						local distance = calculateDistance(projectile.Position, Target.Position)
+					local HitThreshold = 10
+					if distance <= HitThreshold  then
+						print("You Hit the Target!")
+						Target.BrickColor = BrickColor.new("Bright green")
+					else 
+						print("You missed the Target: Distance =", distance)
+						Target.BrickColor = BrickColor.new("Bright red")
+					end
+					wait(2)
+					Target.BrickColor = BrickColor.new("Bright red")
+				        projectile:Destroy()
+					end
+				end)
+			end 
+
+		--print("Projectile Spawned At:", projectile.Position)
+		--print("Projectile Velocity:", projectile.Velocity)
+		
+		Ammo[FireMode] = Ammo[FireMode] - 1
+		else 
+			print("Out of Ammo for Full Auto Mode, Reloading...")
+			wait(2)
+			Ammo[FireMode] = 100 
+			print("Reloaded Full Auto Mode")
+			
+		end
+		-- Burst Fire Mode
+	elseif FireMode == "BurstFire" then
+		if Ammo[FireMode] > 0 then
+		for i = 1, 3 do -- Number of projectiles per burst
+				if Ammo[FireMode] > 0 then
+			local projectile = Instance.new("Part")
+			projectile.Size = Vector3.new(1, 1, 1)
+			projectile.Position = Shooter.Position + Offset
+			projectile.Anchored = false
+			projectile.BrickColor = BrickColor.new("Electric blue")
+			projectile.Parent = workspace
+			projectile.Shape = "Ball"
+			projectile.CanCollide = true
+
+			local projectileVelocity = Shooter.CFrame.lookVector * 550
+			projectile.Velocity = projectileVelocity
+			
+					GunShotSD:Play()
+			
+			local gravity = 0.5
+			local timeElapsed = 0.1
+			print("Gravitational UpForce Turned On for Burst Fire Mode")
+			while projectile.Position.Y > 0  do
+				local gravityVelocity = Vector3.new(0, -gravity * timeElapsed, 0)
+				projectile.Velocity = projectile.Velocity + gravityVelocity
+				wait(timeElapsed)
+				projectile:Destroy()
+			end
+
+			--print("Projectile Spawned At:", projectile.Position)
+			--print("Projectile Velocity:", projectile.Velocity)
+			
+			Ammo[FireMode] = Ammo[FireMode] - 1
+				else 
+					print("Out of Ammo for Burst Fire Mode, Reloading...")
+					wait(0.05) -- Delay between each projectile in the burst
+				 wait(2)
+				 Ammo[FireMode] = 50
+				 print("Reloaded Burst Fire Mode")
+				end
+			end
+		wait(0.1) -- Cooldown between bursts
+		else
+			print("Out of Ammo for Burst Fire Mode!")
+		end
+         -- Shotgun Mode
+		elseif FireMode == "Shotgun" then
+			print("Entering Shotgun Mode")
+		if Ammo[FireMode] >= 2 then 
+		for i = 1, 2 do 
+			print("Shotgun: Shooting Projectile", i)
+			local spread = Vector3.new(math.random(-5,5),math.random(-5, 5), math.random(-5, 5)) * 0.1
+			local direction = (Shooter.CFrame.LookVector + spread).Unit
+			local projectile = Instance.new("Part")
+			projectile.Size = Vector3.new(1, 1, 1)
+			projectile.Position = Shooter.Position + Offset
+			projectile.Anchored = false
+			projectile.BrickColor = BrickColor.new("Neon orange")
+			projectile.Parent = workspace
+			projectile.Shape = "Ball"
+			projectile.CanCollide = true 
+			
+			local projectileVelocity = (Shooter.CFrame.LookVector + spread).Unit * 500		
+			projectile.Velocity = projectileVelocity
+			
+				ShotGunSD:Play() 
+			
+			local direction = (Shooter.CFrame.LookVector + spread).Unit 
+			local gravity = 0.5
+			local initialVelocity = direction * 500
+			local gravity = Vector3.new(0, -196.2, 0)
+			local timeToGround = math.sqrt((2 * projectile.Position.Y) / math.abs(gravity.Y))
+			local finalVelocity = initialVelocity + gravity * timeToGround
+			
+			projectile.Velocity = finalVelocity
+			
+			--print("Projectile Spawned At:", projectile.Position)
+			--print("Projectile Velocity:", projectile.Velocity)
+			
+			wait(0.1)
+			
+				projectile:Destroy()
+		end
+		Ammo[FireMode] = Ammo[FireMode] - 2
+		else
+			print("No ammo left in Shotgun mode, Reloading...")
+			wait(2)
+			Ammo[FireMode] = 20
+			print("Reloaded Shotgun Mode")
+		end
+		-- Sniper Mode
+		elseif FireMode == "Sniper"  then
+			  print("Entering Sniper Mode")
+					if not IsShooting and Ammo[FireMode] > 0 then
+						IsShooting = true
+					local projectile = Instance.new("Part")
+					projectile.Size = Vector3.new(1,1,1)
+					projectile.Position = Shooter.Position + Offset
+					projectile.Anchored = false 
+					projectile.BrickColor = BrickColor.new("Gun metallic")
+					projectile.Parent = workspace
+					projectile.Shape = "Ball"
+					projectile.CanCollide = true 
+					
+					local projectileVelocity = Shooter.CFrame.LookVector * 900
+					projectile.Velocity = projectileVelocity
+					SniperSD:Play()
+					
+					Ammo[FireMode] = Ammo[FireMode] - 1
+					--print("Projectile Spawned At:", projectile.Position)
+					-- print("Projectile Velocity:", projectile.Velocity)
+					
+			   projectile:Destroy()
+					
+					wait(0.1) 
+				end
+				IsShooting  = false 
+		else 
+			print("Out of Ammo For Sniper Mode, Reloading...")
+			wait(2)
+			Ammo[FireMode] = 10
+			print("Reloaded Sniper Mode")
+		end
+end   
+-- Switching Fire Modes
+local function switchFireMode()
+	if FireMode == "FullAuto" then
+		FireMode = "BurstFire"
+		print("Switched to Burst Fire Mode")
+	elseif FireMode == "BurstFire" then
+		FireMode = "Shotgun"
+		print("Switched to Shotgun Mode")
+	elseif FireMode == "Shotgun" then
+		FireMode = "Sniper"
+		print("Switched to Sniper Mode")
+	else 
+		FireMode = "FullAuto"
+		print("Switched to Full Auto Mode")
+	end
+end
+-- On Key Pressed
+local function OnInputBegan(input)
+	if input.UserInputType == Enum.UserInputType.Keyboard then
+		if input.KeyCode == Enum.KeyCode.F then
+			IsShooting = true
+			while IsShooting do
+				shoot()
+				wait(0.05)
+			end
+		elseif input.KeyCode == Enum.KeyCode.T then
+			switchFireMode()
+		end
+	end
+end
+
+local function onInputEnded(input)
+	if input.UserInputType == Enum.UserInputType.Keyboard then
+		if input.KeyCode == Enum.KeyCode.F then
+			IsShooting = false
+		end
+	end
+end
+
+local function onClick()
+	shoot()
+end 
+
+UserInputService.InputBegan:Connect(OnInputBegan)
+UserInputService.InputEnded:Connect(onInputEnded)
+ClickDetector.MouseClick:Connect(onClick) 
